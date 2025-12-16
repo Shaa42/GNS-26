@@ -1,0 +1,30 @@
+{
+   "AS111":
+   {
+      "protocol": "RIP",
+      "network_subnet": "2001:1::",
+      "links":
+      {
+         "R1":
+         {
+            "GigabitEthernet 1/0": "1",
+            "GigabitEthernet 2/0": "-1",
+            "GigabitEthernet 3/0": "-1"
+         },
+
+         "R2":
+         {
+            "GigabitEthernet 1/0": "1",
+            "GigabitEthernet 2/0": "2",
+            "GigabitEthernet 3/0": "-1"
+         },
+
+         "R3":
+         {
+            "GigabitEthernet 1/0": "2",
+            "GigabitEthernet 2/0": "-1",
+            "GigabitEthernet 3/0": "-1"
+         }
+      }
+   }
+}
