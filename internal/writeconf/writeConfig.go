@@ -46,7 +46,7 @@ func WriteConfig(routerName string, data map[string]map[string]string, internalP
 	header += "\nservice timestamps log datetime msec"
 	header += "\nno service password-encryption"
 	header += "\n!"
-	header += "\nhostname`"
+	header += "\nhostname"
 
 	tail := "\n!"
 	tail += "\nip cef"
