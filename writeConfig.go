@@ -6,10 +6,6 @@ import (
     "os"
 )
 
-func getInterfaceString(interfaceName string) {
-
-}
-
 func writeConfig(router_name string, data map[string]map[string]string) {
     filename := router_name + "_configs_i" + router_name[1:] + "_startup-config" + ".cfg"
 
