@@ -6,14 +6,32 @@ import (
     "os"
 )
 
-func writeConfig(router_name string) {
-    filename := "config" + ".cfg"
+func getInterfaceString(interfaceName string) {
+
+}
+
+func writeConfig(router_name string, data map[string]map[string]string) {
+    filename := router_name + "_configs_i" + router_name[1:] + "_startup-config" + ".cfg"
 
     file, err := os.Create(filename)
     if err != nil {
         log.Fatal(err)
     }
     defer file.Close()
+
+	links := data[router_name]
+
+	interfacesStr := ""
+	// For each interface
+	for interfaceName, ip := range links {
+
+	  interfacesStr += fmt.Sprintf("%s %s\n%s %s\n%s",
+	  "interface",
+	  interfaceName,
+	  "no ip address\n negotiation auto\n ipv6 address",
+	  ip,
+	  "ipv6 enable\n !\n")
+   	}
 
 	header := `!
 !
@@ -45,7 +63,7 @@ no login
 !
 end`
 
-	content := fmt.Sprintf("%s %s\n%s", header, router_name, tail)
+	content := fmt.Sprintf("%s %s\n%s %s", header, router_name, interfacesStr, tail)
 	
     _, err = file.WriteString(content)
     if err != nil {
