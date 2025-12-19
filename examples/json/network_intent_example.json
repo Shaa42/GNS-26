@@ -2,7 +2,7 @@
    "AS111":
    {
       "protocol": "RIP",
-      "network_subnet": "2001:1::",
+      "network_subnet": "2001:111::",
       "links":
       {
          "R1":
