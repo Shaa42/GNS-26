@@ -71,7 +71,7 @@ no login
 !
 end`
 
-	content := fmt.Sprintf("%s %s\n%s \n%s\n %s",
+	content := fmt.Sprintf("%s %s\n%s \n%s",
 	header,
 	routerName,
 	interfacesStr,
