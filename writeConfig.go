@@ -6,16 +6,16 @@ import (
     "os"
 )
 
-func writeConfig(router_name string, data map[string]map[string]string) {
-    filename := router_name + "_configs_i" + router_name[1:] + "_startup-config" + ".cfg"
+func writeConfig(routerName string, data map[string]map[string]string) {
+    FILENAME := routerName + "_configs_i" + routerName[1:] + "_startup-config" + ".cfg"
 
-    file, err := os.Create(filename)
+    file, err := os.Create(FILENAME)
     if err != nil {
         log.Fatal(err)
     }
     defer file.Close()
 
-	links := data[router_name]
+	links := data[routerName]
 
 	interfacesStr := ""
 	// For each interface
@@ -59,12 +59,12 @@ no login
 !
 end`
 
-	content := fmt.Sprintf("%s %s\n%s %s", header, router_name, interfacesStr, tail)
+	content := fmt.Sprintf("%s %s\n%s %s", header, routerName, interfacesStr, tail)
 	
     _, err = file.WriteString(content)
     if err != nil {
         log.Fatal(err)
     }
 
-    fmt.Println(".cfg écrit sous", filename)
+    fmt.Println(".cfg écrit sous", FILENAME)
 }
