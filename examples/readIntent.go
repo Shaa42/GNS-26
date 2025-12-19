@@ -15,7 +15,7 @@ func generateIPv6(prefix string, subnetID int, interfID int) string {
 }
 
 func main() {
-	data, err := os.ReadFile("examples/json/network_intent_example.json")
+	data, err := os.ReadFile("examples/json/network_intent_template_v1.json")
 	if err != nil {
 		panic(err)
 	}
