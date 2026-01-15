@@ -1,5 +1,5 @@
 {
-     "AS111": {
+    "AS111": {
         "protocol": "RIP",
         "address_family": "ipv6",
         "network_subnet": "2001:1::/64",
