@@ -6,18 +6,36 @@ import (
 	"os"
 	"strings"
 )
+func getRouterID(rN string) string {
 
+	rID := fmt.Sprintf("%d.%d.%d.%s",
+		1,
+		1,
+		1,
+		rN)
+
+	return rID
+}
 func WriteConfig(routerName string, data map[string]map[string]string, internalProtocol string) {
-	rId := routerName[1:]
-	FILENAME := routerName + "_configs_i" + rId + "_startup-config" + ".cfg"
-	ripStr := ""
-
+	rN := routerName[1:]
+	FILENAME := routerName + "_configs_i" + rN + "_startup-config" + ".cfg"
+	confInterfaceStr := ""
+	ospfConfStr := "!\n!"
+	
+	// Depending on the protocol, will add strings related specifically to that protocol
 	switch internalProtocol {
 	case "RIP":
-		ripStr = "ipv6 rip rip_process enable"
+		confInterfaceStr = "ipv6 rip rip_process enable"
+		confInterfaceStr += "\n!"
+	case "OSPF":
+		confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
+		confInterfaceStr += "\n!"
+		ospfConfStr += "\nipv6 router ospf 1"
+		ospfConfStr += "\n router-id "
+		ospfConfStr += getRouterID(rN)
 
 	default:
-		panic("unrecognized internal routing protocol (atm only RIP can be used)")
+		panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
 	}
 
 	file, err := os.Create(FILENAME)
@@ -31,29 +49,40 @@ func WriteConfig(routerName string, data map[string]map[string]string, internalP
 	var interfacesStr strings.Builder
 	// For each interface
 	for interfaceName, ip := range links {
+		if ip == "-1" {
+			continue
+		}
+		interfaceStr := "interface"
+		interfaceStr += " "
+		interfaceStr += interfaceName
 
-		fmt.Fprintf(&interfacesStr, "%s %s\n%s %s\n%s\n%s",
-			"interface",
-			interfaceName,
+		fmt.Fprintf(&interfacesStr, "%s\n %s %s\n %s\n %s\n",
+			interfaceStr,
 			"no ip address\n negotiation auto\n ipv6 address",
 			ip,
 			"ipv6 enable",
-			ripStr)
+			confInterfaceStr,
+		)
 	}
-
-	header := "!\n!\n!"
+	fmt.Fprintf(&interfacesStr, "!")
+	
+	header := "!\n!"
 	header += "\nservice timestamps debug datetime msec"
 	header += "\nservice timestamps log datetime msec"
 	header += "\nno service password-encryption"
 	header += "\n!"
 	header += "\nhostname"
 
-	tail := "\n!"
-	tail += "\nip cef"
-	tail += "\nno ip domain-lookup"
+	subHeader := "!\n!"
+	subHeader += "\nip cef"
+	subHeader += "\nno ip domain-lookup"
+	subHeader += "\nipv6 unicast-routing"
+	subHeader += "\nipv6 cef"
+	subHeader += "\nip tcp synwait 5"
+	subHeader += "\nmultilink bundle-name authenticated"
+
+	tail := "!\n!"
 	tail += "\nno ip icmp rate-limit unreachable"
-	tail += "\nip tcp synwait 5"
-	tail += "\nno cdp log mismatch duplex"
 	tail += "\n!"
 	tail += "\nline con 0"
 	tail += "\nexec-timeout 0 0"
@@ -69,10 +98,12 @@ func WriteConfig(routerName string, data map[string]map[string]string, internalP
 	tail += "\n!"
 	tail += "\nend"
 
-	content := fmt.Sprintf("%s %s\n%s \n%s",
+	content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s",
 		header,
 		routerName,
+		subHeader,
 		interfacesStr.String(),
+		ospfConfStr,
 		tail)
 
 	_, err = file.WriteString(content)

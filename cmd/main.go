@@ -5,16 +5,27 @@ import (
 )
 
 func main() {
-	as111 := map[string]map[string]string{
-		"R1": {
-			"GigabitEthernet 1/0": "2001:1:100::1/64",
-		},
-		"R2": {
-			"GigabitEthernet 1/0": "2001:1:100::2/64",
-			"GigabitEthernet 2/0": "2001:1:101::1/64",
-		},
+	as112 := map[string]map[string]string{
+		"R4": {
+            "GigabitEthernet 1/0": "-1",
+            "GigabitEthernet 2/0": "2001:2:100::1/64",
+            "GigabitEthernet 3/0": "-1",
+        },
+
+        "R5": {
+            "GigabitEthernet 1/0": "2001:2:100::2/64",
+            "GigabitEthernet 2/0": "2001:2:101::1/64",
+            "GigabitEthernet 3/0": "-1",
+        },
+
+         "R6": {
+            "GigabitEthernet 1/0": "2001:2:101::2/64",
+            "GigabitEthernet 2/0": "-1",
+            "GigabitEthernet 3/0": "-1",
+        },
 	}
+         
 
 	// Create a .cfg file for router named R1 with data dict
-	writeconf.WriteConfig("R1", as111, "RIP")
+	writeconf.WriteConfig("R6", as112, "OSPF")
 }
