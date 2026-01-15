@@ -20,6 +20,17 @@ func generateLoopback(prefix string, routerName string) string {
 	return fmt.Sprintf("%s:100::%s/128", base, id)
 }
 
+func renderInterfaceProtocol(protocol string) string {
+	switch protocol {
+	case "RIP":
+		return " ipv6 rip RIPng enable\n"
+	case "OSPF":
+		return " ipv6 ospf 1 area 0\n"
+	default:
+		return ""
+	}
+}
+
 func main() {
 	// lecture du intent
 	data, err := os.ReadFile("json/network_intent_template_v3.json")
@@ -38,8 +49,8 @@ func main() {
 		cfg := make(map[string]string)
 
 		asMap := asData.(map[string]interface{})
+		protocol := asMap["protocol"].(string)
 		prefix := asMap["network_subnet"].(string)
-
 		links := asMap["links"].([]interface{})
 		routers := asMap["routers"].(map[string]interface{})
 
@@ -56,6 +67,11 @@ func main() {
 		// links
 		for _, linkRaw := range links {
 			link := linkRaw.(map[string]interface{})
+			role := "internal"
+			value := link["role"]
+			if value != nil {
+				role = value.(string)
+			}
 
 			subnetRaw, ok := link["subnet"]
 			if !ok {
@@ -71,11 +87,14 @@ func main() {
 
 				ipv6 := generateIPv6(prefix, subnetID, ifaceID)
 
-				cfg[router] += fmt.Sprintf(
-					"interface %s\n ipv6 address %s\n ipv6 rip RIPng enable\n no shutdown\n\n",
-					iface, ipv6,
-				)
-
+				if role == "internal" {
+					cfg[router] += fmt.Sprintf(
+						"interface %s\n ipv6 address %s\n%s no shutdown\n\n",
+						iface,
+						ipv6,
+						renderInterfaceProtocol(protocol),
+					)
+				}
 				ifaceID++
 			}
 		}

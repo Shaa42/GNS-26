@@ -12,7 +12,7 @@
                 "interfaces": {
 					"loopback": {"role":"loopback"},
 					"GigabitEthernet1/0": {"role":"internal"},
-					"GigabitEthernet2/0": {"role":"internal"},
+					"GigabitEthernet2/0": {"role":"none"},
 					"GigabitEthernet3/0": {"role":"none"}
 				}
             },
@@ -44,7 +44,8 @@
 					"R1": "GigabitEthernet1/0",
 					"R2": "GigabitEthernet1/0"
 				},
-                "subnet": 1
+                "subnet": 1,
+				"role": "internal"
             },
             {
                 "endpoints": {
@@ -61,47 +62,80 @@
 					"R2": "GigabitEthernet2/0",
 					"R3": "GigabitEthernet2/0"
 				},
-				"subnet": 2
+				"subnet": 2,
+				"role": "internal"
 			}
         ]
 	},
 
 	"AS112": {
 		"protocol": "OSPF",
+		"ospf_process": 1,
 		"network_subnet": "2001:2::",
-		"links" :{
+		"remote_as": {
+			"AS111": "peer"
+		},
+		"routers" :{
 			"R4": {
-				"loopback": "2001:200:200::1/128",
-				"ospf_process": 1,
-                "GigabitEthernet 1/0": {
-                    "role": "none",
-                    "address_family": "none",
-                    "address": "none",
-					"area": 0
-                },
-                "GigabitEthernet 2/0": {
-                    "role": "internal",
-                    "address_family": "ipv6",
-                    "address": "2001:2:100::1/64",
-					"area": 0
-                },
-                "GigabitEthernet 3/0": {
-                    "role": "none",
-                    "address_family": "none",
-                    "address": "none",
-					"area": 0
-                }
+				"router_id": "2.2.2.1",
+				"interfaces": {
+					"loopback": {"role":"loopback"},
+					"GigabitEthernet1/0": {"role":"eBGP"},
+					"GigabitEthernet2/0": {"role":"internal"},
+					"GigabitEthernet3/0": {"role":"none"}
+				}
 			},
 			
 			"R5": {
+				"router_id": "2.2.2.2",
+				"interfaces": {
+					"loopback": {"role":"loopback"},
+					"GigabitEthernet1/0": {"role":"internal"},
+					"GigabitEthernet2/0": {"role":"internal"},
+					"GigabitEthernet3/0": {"role":"none"}
+				}
 
 			},
 
 			"R6": {
-
+				"router_id": "2.2.2.3",
+				"interfaces": {
+					"loopback": {"role":"loopback"},
+					"GigabitEthernet1/0": {"role":"internal"},
+					"GigabitEthernet2/0": {"role":"none"},
+					"GigabitEthernet3/0": {"role":"none"}
+				}
 			}
-		}
+		},
 
-
+		"links": [
+            {
+                "endpoints": {
+					"R4": "GigabitEthernet1/0",
+					"R5": "GigabitEthernet1/0"
+				},
+                "subnet": 1,
+				"role": "internal"
+            },
+            {
+                "endpoints": {
+					"R4": "GigabitEthernet2/0"
+				},
+				"role": "eBGP",
+				"peer": {
+					"as": "AS111",
+					"ipv6": "2001:1:100::2"
+				}
+            },
+			{
+				"endpoints": {
+					"R5": "GigabitEthernet2/0",
+					"R6": "GigabitEthernet1/0"
+				},
+				"subnet": 2,
+				"role": "internal"
+			}
+        ]
 	}
 }
+
