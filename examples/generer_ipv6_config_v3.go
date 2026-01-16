@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -31,6 +32,23 @@ func renderInterfaceProtocol(protocol string) string {
 	}
 }
 
+func renderBGP(localAS int, routerID string, peerAS int, peerIPv6 string) string {
+	cfg := ""
+
+	cfg += fmt.Sprintf("router bgp %d\n", localAS)
+	cfg += fmt.Sprintf(" bgp router-id %s\n", routerID)
+	cfg += " bgp log-neighbor-changes\n"
+	cfg += fmt.Sprintf(" neighbor %s remote-as %d\n", peerIPv6, peerAS)
+	cfg += "address-family ipv6 unicast\n"
+	cfg += fmt.Sprintf(" neighbor %s activate\n", peerIPv6)
+	cfg += "exit-address-family"
+
+	//cfg += fmt.Sprintf(" neighbor %s update-source Loopback0\n", peerIPv6)
+	cfg += "\n"
+
+	return cfg
+}
+
 func main() {
 	// lecture du intent
 	data, err := os.ReadFile("json/network_intent_template_v3.json")
@@ -53,9 +71,13 @@ func main() {
 		prefix := asMap["network_subnet"].(string)
 		links := asMap["links"].([]interface{})
 		routers := asMap["routers"].(map[string]interface{})
+		routerIDs := make(map[string]string)
 
 		// loopback ipv6
-		for routerName := range routers {
+		for routerName, routerData := range routers {
+			routerMap := routerData.(map[string]interface{})
+			routerIDs[routerName] = routerMap["router_id"].(string)
+
 			cfg[routerName] = "ipv6 unicast-routing\n\n"
 			loopbackIPv6 := generateLoopback(prefix, routerName)
 			cfg[routerName] += fmt.Sprintf(
@@ -106,6 +128,33 @@ func main() {
 				panic(err)
 			}
 			fmt.Println("Generated", filename)
+		}
+
+		//handle eBGP
+		for _, linkRaw := range links {
+			link := linkRaw.(map[string]interface{})
+
+			roleValue := link["role"]
+			if roleValue == nil || roleValue.(string) != "eBGP" {
+				continue
+			}
+
+			peer := link["peer"].(map[string]interface{})
+			peerASstr := peer["as"].(string)
+			peerIPv6 := peer["ipv6"].(string)
+
+			peerAS, _ := strconv.Atoi(peerASstr[2:])
+			localAS, _ := strconv.Atoi(asName[2:])
+			endpoints := link["endpoints"].(map[string]interface{})
+
+			for routerName := range endpoints {
+				routerID := routerIDs[routerName]
+				cfg[routerName] += renderBGP(localAS, routerID, peerAS, peerIPv6)
+			}
+		}
+
+		for routerName, content := range cfg {
+			os.WriteFile(routerName+".cfg", []byte(content), 0644)
 		}
 	}
 }
