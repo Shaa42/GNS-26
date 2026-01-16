@@ -1,5 +1,9 @@
 package writeconf
 
+import (
+	"fmt"
+)
+
 func ConfIPv6(ip string, interf string) string {
 	/*
 	 * Configure an interface with an IPv6 address
@@ -21,9 +25,17 @@ func ConfNoSD() string {
 	return "no shutdown\n"
 }
 
-func ConfBGP(asNum string, routerID string) string {
-	str := "router bgp " + asNum + "\n"
-	str += "no bgp default ipv4-unicast\n"
-	str += "bgp router-id " + routerID + "\n"
-	return str
+func ConfBGP(localAS int, routerID string, peerAS int, peerIPv6 string) string {
+	cfg := ""
+	cfg += fmt.Sprintf("router bgp %d\n", localAS)
+	cfg += fmt.Sprintf(" bgp router-id %s\n", routerID)
+	cfg += " bgp log-neighbor-changes\n"
+	cfg += fmt.Sprintf(" neighbor %s remote-as %d\n", peerIPv6, peerAS)
+	cfg += "address-family ipv6 unicast\n"
+	cfg += fmt.Sprintf(" neighbor %s activate\n", peerIPv6)
+	cfg += "exit-address-family"
+	//cfg += fmt.Sprintf(" neighbor %s update-source Loopback0\n", peerIPv6)
+	cfg += "\n"
+
+	return cfg
 }

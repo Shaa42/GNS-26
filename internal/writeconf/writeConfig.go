@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 )
+
 func getRouterID(rN string) string {
 
 	rID := fmt.Sprintf("%d.%d.%d.%s",
@@ -16,12 +17,12 @@ func getRouterID(rN string) string {
 
 	return rID
 }
-func WriteConfig(routerName string, data map[string]map[string]string, internalProtocol string) {
+func WriteConfig(routerName string, routerID string, data map[string]map[string]string, internalProtocol string) {
 	rN := routerName[1:]
 	FILENAME := routerName + "_configs_i" + rN + "_startup-config" + ".cfg"
 	confInterfaceStr := ""
 	ospfConfStr := "!\n!"
-	
+
 	// Depending on the protocol, will add strings related specifically to that protocol
 	switch internalProtocol {
 	case "RIP":
@@ -65,7 +66,7 @@ func WriteConfig(routerName string, data map[string]map[string]string, internalP
 		)
 	}
 	fmt.Fprintf(&interfacesStr, "!")
-	
+
 	header := "!\n!"
 	header += "\nservice timestamps debug datetime msec"
 	header += "\nservice timestamps log datetime msec"
