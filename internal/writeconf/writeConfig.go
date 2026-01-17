@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 )
 
 func getRouterID(rN string) string {
@@ -27,10 +26,8 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 	switch internalProtocol {
 	case "RIP":
 		confInterfaceStr = "ipv6 rip rip_process enable"
-		confInterfaceStr += "\n!"
 	case "OSPF":
 		confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
-		confInterfaceStr += "\n!"
 		ospfConfStr += "\nipv6 router ospf 1"
 		ospfConfStr += "\n router-id "
 		ospfConfStr += getRouterID(rN)
@@ -47,7 +44,7 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 
 	links := data[routerName]
 
-	var interfacesStr strings.Builder
+	interfacesStr := ""
 	// For each interface
 	for interfaceName, ip := range links {
 		if ip == "-1" {
@@ -56,18 +53,14 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 		interfaceStr := "interface"
 		interfaceStr += " "
 		interfaceStr += interfaceName
-
-		fmt.Fprintf(&interfacesStr, "%s\n %s %s\n %s\n %s\n",
-			interfaceStr,
-			"no ip address\n negotiation auto\n ipv6 address",
-			ip,
-			"ipv6 enable",
-			confInterfaceStr,
-		)
+		interfacesStr += ConfIPv6(ip, interfaceName)
+		interfacesStr += " "
+		interfacesStr += confInterfaceStr
+		interfacesStr += "\n!\n"
 	}
-	fmt.Fprintf(&interfacesStr, "!")
+	interfacesStr += "!"
 
-	header := "!\n!"
+	header := "!"
 	header += "\nservice timestamps debug datetime msec"
 	header += "\nservice timestamps log datetime msec"
 	header += "\nno service password-encryption"
@@ -103,7 +96,7 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 		header,
 		routerName,
 		subHeader,
-		interfacesStr.String(),
+		interfacesStr,
 		ospfConfStr,
 		tail)
 
