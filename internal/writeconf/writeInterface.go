@@ -8,8 +8,12 @@ func ConfIPv6(ip string, interf string) string {
 	/*
 	 * Configure an interface with an IPv6 address
 	 */
+	
 	str := "interface " + interf + "\n"
-	str += "    ipv6 address " + ip + "\n"
+	str += " no ip address" + "\n"
+	str += " negotiation auto" + "\n"
+	str += " ipv6 address " + ip + "\n"
+	str += " ipv6 enable" + "\n"
 	return str
 }
 
