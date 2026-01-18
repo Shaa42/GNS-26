@@ -6,16 +6,6 @@ import (
 	"os"
 )
 
-func getRouterID(rN string) string {
-
-	rID := fmt.Sprintf("%d.%d.%d.%s",
-		1,
-		1,
-		1,
-		rN)
-
-	return rID
-}
 func WriteConfig(routerName string, routerID string, data map[string]map[string]string, internalProtocol string) {
 	rN := routerName[1:]
 	FILENAME := routerName + "_configs_i" + rN + "_startup-config" + ".cfg"
@@ -30,7 +20,7 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 		confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
 		ospfConfStr += "\nipv6 router ospf 1"
 		ospfConfStr += "\n router-id "
-		ospfConfStr += getRouterID(rN)
+		ospfConfStr += routerID
 
 	default:
 		panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
