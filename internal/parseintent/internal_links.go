@@ -51,3 +51,22 @@ func planInternalLinks(
 
 	return res
 }
+
+func planLoopbacks(prefix string, routers []interface{}) map[string]InterfacePlan {
+
+	res := make(map[string]InterfacePlan)
+
+	for _, r := range routers {
+		router := r.(map[string]interface{})
+
+		name := router["name"].(string)
+
+		res[name] = InterfacePlan{
+			Name:      "Loopback0",
+			IPv6:      generateLoopback(prefix, name),
+			EnableIGP: true,
+		}
+	}
+
+	return res
+}
