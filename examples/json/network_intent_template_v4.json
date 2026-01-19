@@ -16,7 +16,7 @@
                         "role": "loopback",
                         "cost": 0,
                         "subnet": "-",
-                        "host_id": ""
+                        "host_id": "-"
                     },
                     "GigabitEthernet1/0": {
                         "role": "internal",
