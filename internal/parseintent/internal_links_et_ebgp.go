@@ -70,3 +70,44 @@ func planLoopbacks(prefix string, routers []interface{}) map[string]InterfacePla
 
 	return res
 }
+
+func planBGP(
+	asName string,
+	routerIDs map[string]string,
+	links []interface{},
+) map[string]string {
+
+	res := make(map[string]string)
+
+	for _, l := range links {
+		link := l.(map[string]interface{})
+
+		role, ok := link["role"].(string)
+		if !ok || role != "eBGP" {
+			// traiter uniquement les interface ebgp
+			continue
+		}
+
+		info := link["info"].(map[string]interface{})
+
+		peerAS := info["as"].(string)
+		peerIPv6 := info["ipv6"].(string)
+
+		localAS, _ := strconv.Atoi(asName[2:])  // "AS111" → 111
+		remoteAS, _ := strconv.Atoi(peerAS[2:]) // "AS112" → 112
+
+		endpoints := link["endpoints"].(map[string]interface{})
+
+		for router := range endpoints {
+
+			res[router] = renderBGP(
+				localAS,
+				routerIDs[router],
+				remoteAS,
+				peerIPv6,
+			)
+		}
+	}
+
+	return res
+}
