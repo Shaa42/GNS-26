@@ -23,7 +23,10 @@ type InfoRouter struct {
 }
 
 type InfoInterface struct {
-	Role string `json:"role"`
+	Role   string `json:"role"`
+	Cost   int    `json:"cost"`
+	Subnet string `json:"subnet"`
+	HostID string `json:"host_id"`
 }
 
 type InfoLink struct {
