@@ -10,6 +10,12 @@ func generateIPv6(prefix string, subnetID string, ifaceID string) string {
 	base := strings.TrimSuffix(parts[0], "::")
 	return fmt.Sprintf("%s:%s::%s/64", base, subnetID, ifaceID)
 }
+func generateLoopback(prefix string, routerName string) string {
+	parts := strings.Split(prefix, "/")
+	base := strings.TrimSuffix(parts[0], "::")
+	id := routerName[1:]
+	return fmt.Sprintf("%s:100::%s/128", base, id)
+}
 
 func ConfIPv6(ip string, interf string) string {
 	/*

@@ -42,13 +42,20 @@ func WriteConfig(data parseintent.InfoAS) {
 		// For each interface
 		hostID := 1
 		for interfaceName, interfaceInfo := range interfaces {
-			if interfaceInfo.Role != "internal" {
+			if interfaceInfo.Role == "none" {
 				continue
 			}
 			interfaceStr := "interface"
 			interfaceStr += " "
 			interfaceStr += interfaceName
-			interfaceIP := generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
+			interfaceIP := ""
+			
+			if interfaceInfo.Role == "loopback" {
+				interfaceIP = generateLoopback(data.NetworkSubnet, rN)
+			} else {
+				interfaceIP = generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
+			}
+			
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
 			interfacesStr.WriteString(" ")
 			interfacesStr.WriteString(confInterfaceStr)
