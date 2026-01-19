@@ -2,13 +2,20 @@ package writeconf
 
 import (
 	"fmt"
+	"strings"
 )
+
+func generateIPv6(prefix string, subnetID string, ifaceID string) string {
+	parts := strings.Split(prefix, "/")
+	base := strings.TrimSuffix(parts[0], "::")
+	return fmt.Sprintf("%s:%s::%s/64", base, subnetID, ifaceID)
+}
 
 func ConfIPv6(ip string, interf string) string {
 	/*
 	 * Configure an interface with an IPv6 address
 	 */
-	
+
 	str := "interface " + interf + "\n"
 	str += " no ip address" + "\n"
 	str += " negotiation auto" + "\n"

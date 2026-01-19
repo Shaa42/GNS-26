@@ -2,54 +2,83 @@ package writeconf
 
 import (
 	"fmt"
+	"gns-26/internal/parseintent"
 	"log"
 	"os"
+	"strings"
 )
 
-func WriteConfig(routerName string, routerID string, data map[string]map[string]string, internalProtocol string) {
-	rN := routerName[1:]
-	FILENAME := routerName + "_configs_i" + rN + "_startup-config" + ".cfg"
-	confInterfaceStr := ""
-	ospfConfStr := "!\n!"
+func WriteConfig(data parseintent.InfoAS) {
+	for _, router := range data.Routers {
+		rN := router.Name[1:]
+		FILENAME := router.Name + "_configs_i" + rN + "_startup-config" + ".cfg"
+		confInterfaceStr := ""
+		ospfConfStr := "!\n!"
 
-	// Depending on the protocol, will add strings related specifically to that protocol
-	switch internalProtocol {
-	case "RIP":
-		confInterfaceStr = "ipv6 rip rip_process enable"
-	case "OSPF":
-		confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
-		ospfConfStr += "\nipv6 router ospf 1"
-		ospfConfStr += "\n router-id "
-		ospfConfStr += routerID
+		// Depending on the protocol, will add strings related specifically to that protocol
+		switch data.Protocol {
+		case "RIPng":
+			confInterfaceStr = "ipv6 rip rip_process enable"
+		case "OSPF":
+			confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
+			ospfConfStr += "\nipv6 router ospf 1"
+			ospfConfStr += "\n router-id "
+			ospfConfStr += router.RouterID
 
-	default:
-		panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
-	}
-
-	file, err := os.Create(FILENAME)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	links := data[routerName]
-
-	interfacesStr := ""
-	// For each interface
-	for interfaceName, ip := range links {
-		if ip == "-1" {
-			continue
+		default:
+			panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
 		}
-		interfaceStr := "interface"
-		interfaceStr += " "
-		interfaceStr += interfaceName
-		interfacesStr += ConfIPv6(ip, interfaceName)
-		interfacesStr += " "
-		interfacesStr += confInterfaceStr
-		interfacesStr += "\n!\n"
-	}
-	interfacesStr += "!"
 
+		file, err := os.Create(FILENAME)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+
+		//links := data[routerName]
+		interfaces := router.Interfaces
+
+		var interfacesStr strings.Builder
+		// For each interface
+		hostID := 1
+		for interfaceName, interfaceInfo := range interfaces {
+			if interfaceInfo.Role != "internal" {
+				continue
+			}
+			interfaceStr := "interface"
+			interfaceStr += " "
+			interfaceStr += interfaceName
+			interfaceIP := generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
+			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
+			interfacesStr.WriteString(" ")
+			interfacesStr.WriteString(confInterfaceStr)
+			interfacesStr.WriteString("\n!\n")
+			hostID++
+		}
+		interfacesStr.WriteString("!")
+
+		header := strHeader()
+		subHeader := strSubHeader()
+		tail := strTail()
+
+		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s",
+			header,
+			router.Name,
+			subHeader,
+			interfacesStr.String(),
+			ospfConfStr,
+			tail)
+
+		_, err = file.WriteString(content)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println(".cfg écrit sous", FILENAME)
+	}
+}
+
+func strHeader() string {
 	header := "!"
 	header += "\nservice timestamps debug datetime msec"
 	header += "\nservice timestamps log datetime msec"
@@ -57,6 +86,10 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 	header += "\n!"
 	header += "\nhostname"
 
+	return header
+}
+
+func strSubHeader() string {
 	subHeader := "!\n!"
 	subHeader += "\nip cef"
 	subHeader += "\nno ip domain-lookup"
@@ -65,6 +98,10 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 	subHeader += "\nip tcp synwait 5"
 	subHeader += "\nmultilink bundle-name authenticated"
 
+	return subHeader
+}
+
+func strTail() string {
 	tail := "!\n!"
 	tail += "\nno ip icmp rate-limit unreachable"
 	tail += "\n!"
@@ -82,18 +119,5 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 	tail += "\n!"
 	tail += "\nend"
 
-	content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s",
-		header,
-		routerName,
-		subHeader,
-		interfacesStr,
-		ospfConfStr,
-		tail)
-
-	_, err = file.WriteString(content)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(".cfg écrit sous", FILENAME)
+	return tail
 }

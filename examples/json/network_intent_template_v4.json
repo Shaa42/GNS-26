@@ -12,10 +12,30 @@
                 "name": "R1",
                 "router_id": "1.1.1.1",
                 "interfaces": {
-                    "loopback": { "role": "loopback" },
-                    "GigabitEthernet1/0": { "role": "internal" },
-                    "GigabitEthernet2/0": { "role": "none" },
-                    "GigabitEthernet3/0": { "role": "none" }
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": ""
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "none",
+                        "cost": 10,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": 10,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
                 }
             },
 
@@ -23,10 +43,30 @@
                 "name": "R2",
                 "router_id": "1.1.1.2",
                 "interfaces": {
-                    "loopback": { "role": "loopback" },
-                    "GigabitEthernet1/0": { "role": "internal" },
-                    "GigabitEthernet2/0": { "role": "internal" },
-                    "GigabitEthernet3/0": { "role": "eBGP" }
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "2"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "2",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "eBGP",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
                 }
             },
 
@@ -34,10 +74,30 @@
                 "name": "R3",
                 "router_id": "1.1.1.3",
                 "interfaces": {
-                    "loopback": { "role": "loopback" },
-                    "GigabitEthernet1/0": { "role": "none" },
-                    "GigabitEthernet2/0": { "role": "internal" },
-                    "GigabitEthernet3/0": { "role": "none" }
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": ""
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "2",
+                        "host_id": "2"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
                 }
             }
         ],
@@ -70,7 +130,7 @@
                 },
                 "role": "internal",
                 "info": {
-                    "subnet": "1"
+                    "subnet": "2"
                 }
             }
         ]
