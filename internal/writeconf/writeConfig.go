@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"gns-26/internal/parseintent"
 )
 
-func WriteConfig(routerName string, routerID string, data map[string]map[string]string, internalProtocol string) {
+func WriteConfig(routerName string, routerID string, data parseintent.InfoAS, internalProtocol string) {
 	rN := routerName[1:]
 	FILENAME := routerName + "_configs_i" + rN + "_startup-config" + ".cfg"
 	confInterfaceStr := ""
@@ -32,7 +33,8 @@ func WriteConfig(routerName string, routerID string, data map[string]map[string]
 	}
 	defer file.Close()
 
-	links := data[routerName]
+	//links := data[routerName]
+	links := data.Links
 
 	interfacesStr := ""
 	// For each interface
