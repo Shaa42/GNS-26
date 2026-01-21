@@ -48,7 +48,7 @@ func ConfBGP(localAS int, routerID string, peerAS int, peerIPv6 string) string {
 	cfg += fmt.Sprintf(" bgp router-id %s\n", routerID)
 	cfg += " bgp log-neighbor-changes\n"
 	cfg += fmt.Sprintf(" neighbor %s remote-as %d\n", peerIPv6, peerAS)
-	cfg += "address-family ipv6 unicast\n"
+	cfg += " address-family ipv6 unicast\n"
 	cfg += fmt.Sprintf(" neighbor %s activate\n", peerIPv6)
 	cfg += "exit-address-family"
 	//cfg += fmt.Sprintf(" neighbor %s update-source Loopback0\n", peerIPv6)
