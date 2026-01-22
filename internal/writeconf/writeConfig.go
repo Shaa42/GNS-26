@@ -80,6 +80,10 @@ func WriteConfig(data parseintent.InfoAS) {
 			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "loopback" {
 				interfacesStr.WriteString(" ")
 				interfacesStr.WriteString(confInterfaceStr)
+				interfacesStr.WriteString("\n")
+				if data.Protocol == "OSPF" && interfaceInfo.Role == "internal" {
+					interfacesStr.WriteString(fmt.Sprintf(" ipv6 ospf cost %d\n", interfaceInfo.Cost))
+				}
 				interfacesStr.WriteString("\n!\n")
 			}
 			hostID++

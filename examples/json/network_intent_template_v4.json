@@ -32,7 +32,7 @@
                     },
                     "GigabitEthernet3/0": {
                         "role": "none",
-                        "cost": 10,
+                        "cost": -1,
                         "subnet": "-",
                         "host_id": "-"
                     }
@@ -76,7 +76,7 @@
                 "interfaces": {
                     "loopback": {
                         "role": "loopback",
-                        "cost": -1,
+                        "cost": 0,
                         "subnet": "-",
                         "host_id": ""
                     },
@@ -97,7 +97,7 @@
                     },
                     "GigabitEthernet3/0": {
                         "role": "none",
-                        "cost": 0,
+                        "cost": -1,
                         "subnet": "-",
                         "host_id": "-"
                     }
@@ -137,5 +137,112 @@
                 }
             }
         ]
-    }
+    },
+
+    "AS112": {
+        "name": "AS112",
+        "protocol": "OSPF",
+        "address_family": "ipv6",
+        "network_subnet": "2001:2::/64",
+        "remote_as": {
+            "AS112": "peer"
+        },
+        "routers": [
+            {
+                "name": "R4",
+                "router_id": "2.2.2.1",
+                "interfaces": {
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "ebgp",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-",
+						"local_ipv6": "2001:111:112::2/64",
+						"peer_ipv6": "2001:111:112::1",
+						"peer_as": "AS111"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
+                }
+            },
+
+            {
+                "name": "R5",
+                "router_id": "2.2.2.2",
+                "interfaces": {
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "2",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "2"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
+                }
+            },
+
+            {
+                "name": "R6",
+                "router_id": "2.2.2.3",
+                "interfaces": {
+                    "loopback": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": ""
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "2",
+                        "host_id": "2"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
+                }
+            }
+        ]
+	}
 }
