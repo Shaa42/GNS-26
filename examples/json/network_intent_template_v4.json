@@ -12,7 +12,7 @@
                 "name": "R1",
                 "router_id": "1.1.1.1",
                 "interfaces": {
-                    "loopback": {
+                    "Loopback0": {
                         "role": "loopback",
                         "cost": 0,
                         "subnet": "-",
@@ -43,7 +43,7 @@
                 "name": "R2",
                 "router_id": "1.1.1.2",
                 "interfaces": {
-                    "loopback": {
+                    "Loopback0": {
                         "role": "loopback",
                         "cost": 0,
                         "subnet": "-",
@@ -74,7 +74,7 @@
                 "name": "R3",
                 "router_id": "1.1.1.3",
                 "interfaces": {
-                    "loopback": {
+                    "Loopback0": {
                         "role": "loopback",
                         "cost": -1,
                         "subnet": "-",
