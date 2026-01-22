@@ -86,7 +86,7 @@
                         "subnet": "-",
                         "host_id": "-",
 						"local_ipv6": "2001:111:112::1/64",
-						"peer_ipv6": "2001:111:112::2/64",
+						"peer_ipv6": "2001:111:112::2",
 						"peer_as": "AS112"
                     },
                     "GigabitEthernet2/0": {
