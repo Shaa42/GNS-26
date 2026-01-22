@@ -62,7 +62,7 @@
                         "host_id": "1"
                     },
                     "GigabitEthernet3/0": {
-                        "role": "eBGP",
+                        "role": "none",
                         "cost": 0,
                         "subnet": "-",
                         "host_id": "-"
@@ -78,19 +78,19 @@
                         "role": "loopback",
                         "cost": -1,
                         "subnet": "-",
-                        "host_id": ""
-                    },
-                    "GigabitEthernet1/0": {
-                        "role": "none",
-                        "cost": -1,
-                        "subnet": "-",
                         "host_id": "-"
                     },
-                    "GigabitEthernet2/0": {
+                    "GigabitEthernet1/0": {
                         "role": "internal",
-                        "cost": 10,
+                        "cost": -1,
                         "subnet": "2",
                         "host_id": "2"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "eBGP",
+                        "cost": 10,
+                        "subnet": "111",
+                        "host_id": "111"
                     },
                     "GigabitEthernet3/0": {
                         "role": "none",

@@ -13,12 +13,43 @@ func WriteConfig(data parseintent.InfoAS) {
 	is_eBGP_router := false
 	
 	var loopbackNeighbours []string
-	fmt.Println(len(data.RemoteAS))
 	if len(data.RemoteAS) > 0 {
 		// More than one AS in the network
 		eBGP_activated = true
 	}
+	if eBGP_activated {
+		// This first loop is for finding the iBGP neighbors
+		for _, router := range data.Routers {
+			interfaces := router.Interfaces
+
+			for interfaceName, interfaceInfo := range interfaces {
+				if interfaceInfo.Role == "none" {
+					continue
+				}
+				interfaceStr := "interface"
+				interfaceStr += " "
+				interfaceStr += interfaceName
+				interfaceIP := ""
+				
+				if interfaceInfo.Role == "loopback" {
+					// If the interface is a loopback and eBGP is activated, 
+					// set up the loopback and add it to the internal_neighbor slice
+					if eBGP_activated {
+						interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
+						
+						loopbackNeighbours = append(loopbackNeighbours, interfaceIP)
+					}
+					
+				}
+			}
+		}
+	}
+
+	
+
+	// Setup the .cfg file for every router
 	for _, router := range data.Routers {
+		is_eBGP_router = false
 		// R1 => rN = "1"
 		rN := router.Name[1:]
 		FILENAME := router.Name + "_configs_i" + rN + "_startup-config" + ".cfg"
@@ -52,6 +83,7 @@ func WriteConfig(data parseintent.InfoAS) {
 		var interfacesStr strings.Builder
 		// For each interface
 		hostID := 1
+		selfLoopbackIP := ""
 		for interfaceName, interfaceInfo := range interfaces {
 			if interfaceInfo.Role == "none" {
 				continue
@@ -61,12 +93,13 @@ func WriteConfig(data parseintent.InfoAS) {
 			interfaceStr += interfaceName
 			interfaceIP := ""
 			
+			
 			if interfaceInfo.Role == "loopback" {
 				// If the interface is a loopback and eBGP is activated, 
 				// set up the loopback and add it to the internal_neighbor slice
 				if eBGP_activated {
 					interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
-					loopbackNeighbours = append(loopbackNeighbours, interfaceIP)
+					selfLoopbackIP = interfaceIP
 				}
 				
 			} else {
@@ -75,7 +108,7 @@ func WriteConfig(data parseintent.InfoAS) {
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
 			interfacesStr.WriteString("\n")
-			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "Loopback0" {
+			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "loopback" {
 				interfacesStr.WriteString(" ")
 				interfacesStr.WriteString(confInterfaceStr)
 				interfacesStr.WriteString("\n!\n")
@@ -98,6 +131,7 @@ func WriteConfig(data parseintent.InfoAS) {
 		bgpConfStr += " \n"
 
 		bgpNeighborActivate := ""
+		bgpSelfStaticRoute := ""
 		if is_eBGP_router {
 			bgpConfStr += "\n no bgp default ipv4-unicast"
 			bgpConfStr += "\n"
@@ -109,18 +143,26 @@ func WriteConfig(data parseintent.InfoAS) {
 			
 			bgpNeighborActivate += "  network " + loopbackSubnet + "/48"
 			bgpNeighborActivate += "\n"
+
+			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0"
 		}
 		
 
 		for _, neighborIP := range loopbackNeighbours {
 			// for each neighbor, neighbor activate + update-source Loopback0
+			if neighborIP == selfLoopbackIP {
+				continue
+			}
 
-			bgpConfStr += " neighbor " + neighborIP + " remote-as " + localAS
+
+			neighborAddr := strings.Split(neighborIP, "/")[0]
+
+			bgpConfStr += " neighbor " + neighborAddr + " remote-as " + localAS
 			bgpConfStr += " \n"
-			bgpConfStr += " neighbor " + neighborIP + " update-source " + "Loopback0"
+			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
 			bgpConfStr += " \n"
 			
-			bgpNeighborActivate += "  neighbor " + neighborIP + " activate"
+			bgpNeighborActivate += "  neighbor " + neighborAddr + " activate"
 			bgpNeighborActivate += "  \n"
 		}
 		bgpConfStr += " !"
@@ -137,12 +179,13 @@ func WriteConfig(data parseintent.InfoAS) {
 
 		
 
-		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s",
+		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s\n%s",
 			header,
 			router.Name,
 			subHeader,
 			interfacesStr.String(),
 			bgpConfStr,
+			bgpSelfStaticRoute,
 			ospfConfStr,
 			ripConfStr,
 			tail)
