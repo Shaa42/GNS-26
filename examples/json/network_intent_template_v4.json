@@ -150,9 +150,71 @@
         "routers": [
             {
                 "name": "R4",
-                "router_id": "2.2.2.1",
+                "router_id": "1.1.1.4",
                 "interfaces": {
-                    "loopback": {
+                    "Loopback0": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "none",
+                        "cost": 10,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
+                }
+            },
+
+            {
+                "name": "R5",
+                "router_id": "1.1.1.5",
+                "interfaces": {
+                    "Loopback0": {
+                        "role": "loopback",
+                        "cost": 0,
+                        "subnet": "-",
+                        "host_id": "-"
+                    },
+                    "GigabitEthernet1/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "1",
+                        "host_id": "2"
+                    },
+                    "GigabitEthernet2/0": {
+                        "role": "internal",
+                        "cost": 10,
+                        "subnet": "2",
+                        "host_id": "1"
+                    },
+                    "GigabitEthernet3/0": {
+                        "role": "none",
+                        "cost": -1,
+                        "subnet": "-",
+                        "host_id": "-"
+                    }
+                }
+            },
+
+            {
+                "name": "R6",
+                "router_id": "1.1.1.6",
+                "interfaces": {
+                    "Loopback0": {
                         "role": "loopback",
                         "cost": 0,
                         "subnet": "-",
@@ -170,70 +232,8 @@
                     "GigabitEthernet2/0": {
                         "role": "internal",
                         "cost": 10,
-                        "subnet": "1",
-                        "host_id": "1"
-                    },
-                    "GigabitEthernet3/0": {
-                        "role": "none",
-                        "cost": -1,
-                        "subnet": "-",
-                        "host_id": "-"
-                    }
-                }
-            },
-
-            {
-                "name": "R5",
-                "router_id": "2.2.2.2",
-                "interfaces": {
-                    "loopback": {
-                        "role": "loopback",
-                        "cost": 0,
-                        "subnet": "-",
-                        "host_id": "-"
-                    },
-                    "GigabitEthernet1/0": {
-                        "role": "internal",
-                        "cost": 10,
                         "subnet": "2",
-                        "host_id": "1"
-                    },
-                    "GigabitEthernet2/0": {
-                        "role": "internal",
-                        "cost": 10,
-                        "subnet": "1",
-                        "host_id": "2"
-                    },
-                    "GigabitEthernet3/0": {
-                        "role": "none",
-                        "cost": -1,
-                        "subnet": "-",
-                        "host_id": "-"
-                    }
-                }
-            },
-
-            {
-                "name": "R6",
-                "router_id": "2.2.2.3",
-                "interfaces": {
-                    "loopback": {
-                        "role": "loopback",
-                        "cost": 0,
-                        "subnet": "-",
-                        "host_id": ""
-                    },
-                    "GigabitEthernet1/0": {
-                        "role": "internal",
-                        "cost": 10,
-                        "subnet": "2",
-                        "host_id": "2"
-                    },
-                    "GigabitEthernet2/0": {
-                        "role": "none",
-                        "cost": -1,
-                        "subnet": "-",
-                        "host_id": "-"
+                        "host_id": "3"
                     },
                     "GigabitEthernet3/0": {
                         "role": "none",
@@ -243,6 +243,39 @@
                     }
                 }
             }
+        ],
+
+        "links": [
+            {
+                "endpoints": {
+                    "R1": "GigabitEthernet1/0",
+                    "R2": "GigabitEthernet1/0"
+                },
+                "role": "internal",
+                "info": {
+                    "subnet": "1"
+                }
+            },
+            {
+                "endpoints": {
+                    "R3": "GigabitEthernet1/0"
+                },
+                "role": "eBGP",
+                "info": {
+                    "as": "AS112",
+                    "ipv6": "2001:2:100::1"
+                }
+            },
+            {
+                "endpoints": {
+                    "R2": "GigabitEthernet2/0",
+                    "R3": "GigabitEthernet2/0"
+                },
+                "role": "internal",
+                "info": {
+                    "subnet": "2"
+                }
+            }
         ]
-	}
+    }
 }
