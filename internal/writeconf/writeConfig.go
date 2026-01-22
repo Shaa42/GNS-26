@@ -16,7 +16,7 @@ func WriteConfig(data parseintent.InfoAS) {
 		confInterfaceStr := ""
 		ripConfStr := ""
 		ospfConfStr := "!\n!"
-		bgpConf := buildEBGPConfig(data.Name, router, data.Links)
+		bgpConf := buildEBGPConfig(data.Name, router)
 
 		// Depending on the protocol, will add strings related specifically to that protocol
 		switch data.Protocol {
@@ -56,10 +56,20 @@ func WriteConfig(data parseintent.InfoAS) {
 			interfaceStr += interfaceName
 			interfaceIP := ""
 
-			if interfaceInfo.Role == "loopback" {
-				interfaceIP = generateLoopback(data.NetworkSubnet, rN)
-			} else {
+			switch interfaceInfo.Role {
+			case "loopback":
+				interfaceIP = generateLoopback(data.NetworkSubnet, router.Name)
+			case "internal":
 				interfaceIP = generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
+			case "ebgp":
+				if interfaceInfo.LocalIPv6 == "" {
+					panic(fmt.Sprintf(
+						"eBGP interface %s on router %s has no local_ipv6",
+						interfaceName,
+						router.Name,
+					))
+				}
+				interfaceIP = interfaceInfo.LocalIPv6
 			}
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
@@ -80,7 +90,7 @@ func WriteConfig(data parseintent.InfoAS) {
 		subHeader := strSubHeader()
 		tail := strTail()
 
-		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s",
+		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s",
 			header,
 			router.Name,
 			subHeader,
@@ -102,41 +112,42 @@ func WriteConfig(data parseintent.InfoAS) {
 func buildEBGPConfig(
 	asName string,
 	router parseintent.InfoRouter,
-	links []parseintent.InfoLink,
 ) string {
-	var sb strings.Builder
 
 	localAS, _ := strconv.Atoi(asName[2:])
 
-	for _, link := range links {
-		if link.Role != "eBGP" {
+	var sb strings.Builder
+	hasEBGP := false
+
+	sb.WriteString("router bgp ")
+	sb.WriteString(strconv.Itoa(localAS))
+	sb.WriteString("\n")
+
+	sb.WriteString(" bgp router-id ")
+	sb.WriteString(router.RouterID)
+	sb.WriteString("\n")
+
+	for _, iface := range router.Interfaces {
+		if iface.Role != "ebgp" {
 			continue
 		}
 
-		peerAS := link.Info["as"]
-		peerIPv6 := link.Info["ipv6"]
+		hasEBGP = true
 
-		remoteAS, _ := strconv.Atoi(peerAS[2:])
-
-		if _, ok := link.Endpoints[router.Name]; !ok {
-			continue
-		}
-
-		sb.WriteString("router bgp ")
-		sb.WriteString(strconv.Itoa(localAS))
-		sb.WriteString("\n")
-
-		sb.WriteString(" bgp router-id ")
-		sb.WriteString(router.RouterID)
-		sb.WriteString("\n")
+		remoteAS, _ := strconv.Atoi(iface.PeerAS[2:])
 
 		sb.WriteString(" neighbor ")
-		sb.WriteString(peerIPv6)
+		sb.WriteString(iface.PeerIPv6)
 		sb.WriteString(" remote-as ")
 		sb.WriteString(strconv.Itoa(remoteAS))
-		sb.WriteString("\n!\n")
+		sb.WriteString("\n")
 	}
 
+	if !hasEBGP {
+		return ""
+	}
+
+	sb.WriteString("!\n")
 	return sb.String()
 }
 

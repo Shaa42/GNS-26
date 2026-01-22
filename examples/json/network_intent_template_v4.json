@@ -62,8 +62,8 @@
                         "host_id": "1"
                     },
                     "GigabitEthernet3/0": {
-                        "role": "eBGP",
-                        "cost": 0,
+                        "role": "none",
+                        "cost": -1,
                         "subnet": "-",
                         "host_id": "-"
                     }
@@ -81,10 +81,13 @@
                         "host_id": ""
                     },
                     "GigabitEthernet1/0": {
-                        "role": "none",
-                        "cost": -1,
+                        "role": "ebgp",
+                        "cost": 0,
                         "subnet": "-",
-                        "host_id": "-"
+                        "host_id": "-",
+						"local_ipv6": "2001:111:112::1/64",
+						"peer_ipv6": "2001:111:112::2/64",
+						"peer_as": "AS112"
                     },
                     "GigabitEthernet2/0": {
                         "role": "internal",
@@ -94,7 +97,7 @@
                     },
                     "GigabitEthernet3/0": {
                         "role": "none",
-                        "cost": -1,
+                        "cost": 0,
                         "subnet": "-",
                         "host_id": "-"
                     }
@@ -115,7 +118,7 @@
             },
             {
                 "endpoints": {
-                    "R2": "GigabitEthernet3/0"
+                    "R3": "GigabitEthernet1/0"
                 },
                 "role": "eBGP",
                 "info": {

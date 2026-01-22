@@ -8,7 +8,7 @@ import (
 func main() {
 
 	// Parse json intent file and print the as' info
-	asMap, err := parseintent.NewAS("examples/json/network_intent_template_v4.json")
+	asMap, err := parseintent.NewAS("/Users/jineiya/Documents/GitHub/GNS-26/examples/json/network_intent_template_v4.json")
 	if err != nil {
 		panic(err)
 	}

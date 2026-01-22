@@ -27,6 +27,10 @@ type InfoInterface struct {
 	Cost   int    `json:"cost"`
 	Subnet string `json:"subnet"`
 	HostID string `json:"host_id"`
+
+	LocalIPv6 string `json:"local_ipv6,omitempty"`
+	PeerIPv6  string `json:"peer_ipv6,omitempty"`
+	PeerAS    string `json:"peer_as,omitempty"`
 }
 
 type InfoLink struct {
