@@ -5,48 +5,85 @@ import (
 	"gns-26/internal/parseintent"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
 func WriteConfig(data parseintent.InfoAS) {
+	eBGP_activated := false // If eBGP is activated, thus activating iBGP
+	is_eBGP_router := false
+	
+	var loopbackNeighbours []string
+	if len(data.RemoteAS) > 0 {
+		// More than one AS in the network
+		eBGP_activated = true
+	}
+	if eBGP_activated {
+		// This first loop is for finding the iBGP neighbors
+		for _, router := range data.Routers {
+			interfaces := router.Interfaces
+
+			for interfaceName, interfaceInfo := range interfaces {
+				if interfaceInfo.Role == "none" {
+					continue
+				}
+				interfaceStr := "interface"
+				interfaceStr += " "
+				interfaceStr += interfaceName
+				interfaceIP := ""
+				
+				if interfaceInfo.Role == "loopback" {
+					// If the interface is a loopback and eBGP is activated, 
+					// set up the loopback and add it to the internal_neighbor slice
+					if eBGP_activated {
+						interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
+						
+						loopbackNeighbours = append(loopbackNeighbours, interfaceIP)
+					}
+					
+				}
+			}
+		}
+	}
+
+	
+
+	// Setup the .cfg file for every router
 	for _, router := range data.Routers {
+		is_eBGP_router = false
+		// R1 => rN = "1"
 		rN := router.Name[1:]
 		FILENAME := router.Name + "_configs_i" + rN + "_startup-config" + ".cfg"
 		confInterfaceStr := ""
 		ripConfStr := ""
 		ospfConfStr := "!\n!"
-		bgpConf := buildEBGPConfig(data.Name, router)
 
 		// Depending on the protocol, will add strings related specifically to that protocol
 		switch data.Protocol {
 		case "RIPng":
 			confInterfaceStr = "ipv6 rip rip_process enable"
 			ripConfStr += "\nipv6 router rip rip_process"
-			ripConfStr += "\n redistribute bgp " + data.Name[2:]
 		case "OSPF":
 			confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
 			ospfConfStr += "\nipv6 router ospf 1"
 			ospfConfStr += "\n router-id "
 			ospfConfStr += router.RouterID
-			ospfConfStr += "\n redistribute bgp " + data.Name[2:]
 
 		default:
 			panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
 		}
-
+		
 		file, err := os.Create(FILENAME)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer file.Close()
 
-		//links := data[routerName]
 		interfaces := router.Interfaces
 
 		var interfacesStr strings.Builder
 		// For each interface
 		hostID := 1
+		selfLoopbackIP := ""
 		for interfaceName, interfaceInfo := range interfaces {
 			if interfaceInfo.Role == "none" {
 				continue
@@ -59,6 +96,10 @@ func WriteConfig(data parseintent.InfoAS) {
 			switch interfaceInfo.Role {
 			case "loopback":
 				interfaceIP = generateLoopback(data.NetworkSubnet, router.Name)
+        if eBGP_activated {
+					interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
+					selfLoopbackIP = interfaceIP
+				}
 			case "internal":
 				interfaceIP = generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
 			case "ebgp":
@@ -74,9 +115,6 @@ func WriteConfig(data parseintent.InfoAS) {
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
 			interfacesStr.WriteString("\n")
-			if interfaceInfo.Role != "loopback" {
-				interfacesStr.WriteString(" no shutdown\n")
-			}
 			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "loopback" {
 				interfacesStr.WriteString(" ")
 				interfacesStr.WriteString(confInterfaceStr)
@@ -86,6 +124,9 @@ func WriteConfig(data parseintent.InfoAS) {
 				}
 				interfacesStr.WriteString("\n!\n")
 			}
+			if interfaceInfo.Role == "eBGP" {
+				is_eBGP_router = true
+			}
 			hostID++
 		}
 		interfacesStr.WriteString("!")
@@ -94,14 +135,70 @@ func WriteConfig(data parseintent.InfoAS) {
 		subHeader := strSubHeader()
 		tail := strTail()
 
-		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s",
+		localAS := data.Name[2:]
+		bgpConfStr := "router bgp " + localAS
+		bgpConfStr += "\n"
+		bgpConfStr += " bgp router-id " + router.RouterID
+		bgpConfStr += " \n"
+
+		bgpNeighborActivate := ""
+		bgpSelfStaticRoute := ""
+		if is_eBGP_router {
+			bgpConfStr += "\n no bgp default ipv4-unicast"
+			bgpConfStr += "\n"
+
+			loopbackIP := generateLoopbackIPv6(data.NetworkSubnet, router.Name)
+
+			idx := strings.LastIndex(loopbackIP, ":")
+			loopbackSubnet := loopbackIP[:idx+1]
+			
+			bgpNeighborActivate += "  network " + loopbackSubnet + "/48"
+			bgpNeighborActivate += "\n"
+
+			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0"
+		}
+		
+
+		for _, neighborIP := range loopbackNeighbours {
+			// for each neighbor, neighbor activate + update-source Loopback0
+			if neighborIP == selfLoopbackIP {
+				continue
+			}
+
+
+			neighborAddr := strings.Split(neighborIP, "/")[0]
+
+			bgpConfStr += " neighbor " + neighborAddr + " remote-as " + localAS
+			bgpConfStr += " \n"
+			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
+			bgpConfStr += " \n"
+			
+			bgpNeighborActivate += "  neighbor " + neighborAddr + " activate"
+			bgpNeighborActivate += "  \n"
+		}
+		bgpConfStr += " !"
+		bgpConfStr += "\n address-family ipv4"
+		bgpConfStr += "\n exit-address-family"
+		bgpConfStr += "\n"
+		bgpConfStr += " !"
+		bgpConfStr += "\n"
+
+		bgpConfStr += " address-family ipv6"
+		bgpConfStr += "\n"
+		bgpConfStr += bgpNeighborActivate
+		bgpConfStr += "\n exit-address-family"
+
+		
+
+		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s\n%s",
 			header,
 			router.Name,
 			subHeader,
 			interfacesStr.String(),
+			bgpConfStr,
+			bgpSelfStaticRoute,
 			ospfConfStr,
 			ripConfStr,
-			bgpConf,
 			tail)
 
 		_, err = file.WriteString(content)
@@ -111,48 +208,6 @@ func WriteConfig(data parseintent.InfoAS) {
 
 		fmt.Println(".cfg écrit sous", FILENAME)
 	}
-}
-
-func buildEBGPConfig(
-	asName string,
-	router parseintent.InfoRouter,
-) string {
-
-	localAS, _ := strconv.Atoi(asName[2:])
-
-	var sb strings.Builder
-	hasEBGP := false
-
-	sb.WriteString("router bgp ")
-	sb.WriteString(strconv.Itoa(localAS))
-	sb.WriteString("\n")
-
-	sb.WriteString(" bgp router-id ")
-	sb.WriteString(router.RouterID)
-	sb.WriteString("\n")
-
-	for _, iface := range router.Interfaces {
-		if iface.Role != "ebgp" {
-			continue
-		}
-
-		hasEBGP = true
-
-		remoteAS, _ := strconv.Atoi(iface.PeerAS[2:])
-
-		sb.WriteString(" neighbor ")
-		sb.WriteString(iface.PeerIPv6)
-		sb.WriteString(" remote-as ")
-		sb.WriteString(strconv.Itoa(remoteAS))
-		sb.WriteString("\n")
-	}
-
-	if !hasEBGP {
-		return ""
-	}
-
-	sb.WriteString("!\n")
-	return sb.String()
 }
 
 func strHeader() string {
