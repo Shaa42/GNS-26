@@ -12,7 +12,8 @@ func WriteConfig(data parseintent.InfoAS) {
 	eBGP_activated := false // If eBGP is activated, thus activating iBGP
 	is_eBGP_router := false
 	
-	var loopbackNeighbours []string
+	var ibgpNeighbors []string
+	var ebgpNeighbors [][2]string
 	if len(data.RemoteAS) > 0 {
 		// More than one AS in the network
 		eBGP_activated = true
@@ -37,7 +38,7 @@ func WriteConfig(data parseintent.InfoAS) {
 					if eBGP_activated {
 						interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
 						
-						loopbackNeighbours = append(loopbackNeighbours, interfaceIP)
+						ibgpNeighbors = append(ibgpNeighbors, interfaceIP)
 					}
 					
 				}
@@ -95,14 +96,16 @@ func WriteConfig(data parseintent.InfoAS) {
 
 			switch interfaceInfo.Role {
 			case "loopback":
-				interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
-        if eBGP_activated {
+				// Turns ON the loopbacks only if eBGP (thus iBGP) is activated
+				if eBGP_activated {
 					interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
 					selfLoopbackIP = interfaceIP
 				}
 			case "internal":
 				interfaceIP = generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
 			case "ebgp":
+				// If it's an eBGP connection, the specified IP is static
+				is_eBGP_router = true
 				if interfaceInfo.LocalIPv6 == "" {
 					panic(fmt.Sprintf(
 						"eBGP interface %s on router %s has no local_ipv6",
@@ -111,22 +114,27 @@ func WriteConfig(data parseintent.InfoAS) {
 					))
 				}
 				interfaceIP = interfaceInfo.LocalIPv6
+
+				var eBGP_peer [2]string // [REMOTE_AS_NUM, REMOTE_AS_IP]
+				eBGP_peer[0] = interfaceInfo.PeerAS
+				eBGP_peer[1] = interfaceInfo.PeerIPv6
+				
+				// Adds the remote-AS router as neighbor
+				ebgpNeighbors = append(ebgpNeighbors, eBGP_peer)
+				
 			}
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
 			interfacesStr.WriteString("\n")
-			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "loopback" {
-				interfacesStr.WriteString(" ")
-				interfacesStr.WriteString(confInterfaceStr)
-				interfacesStr.WriteString("\n")
-				if data.Protocol == "OSPF" && interfaceInfo.Role == "internal" {
-					interfacesStr.WriteString(fmt.Sprintf(" ipv6 ospf cost %d\n", interfaceInfo.Cost))
-				}
-				interfacesStr.WriteString("\n!\n")
+			interfacesStr.WriteString(" ")
+			interfacesStr.WriteString(confInterfaceStr)
+			interfacesStr.WriteString("\n")
+
+			// Sets up the OSPF link cost
+			if data.Protocol == "OSPF" && interfaceInfo.Role == "internal" {
+				interfacesStr.WriteString(fmt.Sprintf(" ipv6 ospf cost %d\n", interfaceInfo.Cost))
 			}
-			if interfaceInfo.Role == "eBGP" {
-				is_eBGP_router = true
-			}
+			interfacesStr.WriteString("\n!\n")
 			hostID++
 		}
 		interfacesStr.WriteString("!")
@@ -152,14 +160,26 @@ func WriteConfig(data parseintent.InfoAS) {
 			idx := strings.LastIndex(loopbackIP, ":")
 			loopbackSubnet := loopbackIP[:idx+1]
 			
+			// Advertise the loopback subnet
 			bgpNeighborActivate += "  network " + loopbackSubnet + "/48"
 			bgpNeighborActivate += "\n"
 
+			// Sets up a static route in order to allow the loopback subnet advertisement
 			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0"
+			for _, remotePeer := range ebgpNeighbors {
+				
+				remotePeerAS := remotePeer[0][2:] // remotePeer[0] is like AS111
+				remotePeerIP := remotePeer[1]
+				bgpConfStr += " neighbor " + remotePeerIP + " remote-as " + remotePeerAS
+				bgpConfStr += " \n"
+
+				bgpNeighborActivate += "  neighbor " + remotePeerIP + " activate"
+				bgpNeighborActivate += "  \n"
+			}
 		}
 		
 
-		for _, neighborIP := range loopbackNeighbours {
+		for _, neighborIP := range ibgpNeighbors {
 			// for each neighbor, neighbor activate + update-source Loopback0
 			if neighborIP == selfLoopbackIP {
 				continue
@@ -167,7 +187,8 @@ func WriteConfig(data parseintent.InfoAS) {
 
 
 			neighborAddr := strings.Split(neighborIP, "/")[0]
-
+			
+			// Sets up the neighbours and use their Loopback as source
 			bgpConfStr += " neighbor " + neighborAddr + " remote-as " + localAS
 			bgpConfStr += " \n"
 			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
