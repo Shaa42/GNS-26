@@ -92,18 +92,25 @@ func WriteConfig(data parseintent.InfoAS) {
 			interfaceStr += " "
 			interfaceStr += interfaceName
 			interfaceIP := ""
-			
-			
-			if interfaceInfo.Role == "loopback" {
-				// If the interface is a loopback and eBGP is activated, 
-				// set up the loopback and add it to the internal_neighbor slice
-				if eBGP_activated {
+
+			switch interfaceInfo.Role {
+			case "loopback":
+				interfaceIP = generateLoopback(data.NetworkSubnet, router.Name)
+        if eBGP_activated {
 					interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
 					selfLoopbackIP = interfaceIP
 				}
-				
-			} else {
+			case "internal":
 				interfaceIP = generateIPv6(data.NetworkSubnet, interfaceInfo.Subnet, interfaceInfo.HostID)
+			case "ebgp":
+				if interfaceInfo.LocalIPv6 == "" {
+					panic(fmt.Sprintf(
+						"eBGP interface %s on router %s has no local_ipv6",
+						interfaceName,
+						router.Name,
+					))
+				}
+				interfaceIP = interfaceInfo.LocalIPv6
 			}
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
@@ -111,6 +118,10 @@ func WriteConfig(data parseintent.InfoAS) {
 			if interfaceInfo.Role == "internal" || interfaceInfo.Role == "loopback" {
 				interfacesStr.WriteString(" ")
 				interfacesStr.WriteString(confInterfaceStr)
+				interfacesStr.WriteString("\n")
+				if data.Protocol == "OSPF" && interfaceInfo.Role == "internal" {
+					interfacesStr.WriteString(fmt.Sprintf(" ipv6 ospf cost %d\n", interfaceInfo.Cost))
+				}
 				interfacesStr.WriteString("\n!\n")
 			}
 			if interfaceInfo.Role == "eBGP" {
