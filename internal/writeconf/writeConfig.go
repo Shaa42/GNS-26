@@ -95,7 +95,7 @@ func WriteConfig(data parseintent.InfoAS) {
 
 			switch interfaceInfo.Role {
 			case "loopback":
-				interfaceIP = generateLoopback(data.NetworkSubnet, router.Name)
+				interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
         if eBGP_activated {
 					interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
 					selfLoopbackIP = interfaceIP
