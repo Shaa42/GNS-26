@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"gns-26/applycfg"
 	"gns-26/internal/parseintent"
 	"gns-26/internal/writeconf"
 )
@@ -19,4 +21,15 @@ func main() {
 	as111.LogAS()
 	writeconf.WriteConfig(as112)
 	as112.LogAS()
+
+	// Apply ths just created .cfg to every router
+	for _, router := range as111.Routers {
+		applycfg.ApplyCfg(router.Name[1:], "GNS-project")
+	}
+
+	for _, router := range as112.Routers {
+		applycfg.ApplyCfg(router.Name[1:], "GNS-project")
+	}
+
+	fmt.Println("-- All .cfg applied.")
 }
