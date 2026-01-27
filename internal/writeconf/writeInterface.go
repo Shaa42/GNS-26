@@ -6,11 +6,15 @@ import (
 )
 
 func generateIPv6(prefix string, subnetID string, ifaceID string) string {
+	// Example: AS 1 subnet 2 hostid 1
+	// 2001:1:2::1/64
 	parts := strings.Split(prefix, "/")
 	base := strings.TrimSuffix(parts[0], "::")
 	return fmt.Sprintf("%s:%s::%s/64", base, subnetID, ifaceID)
 }
 func generateLoopbackIPv6(prefix string, routerName string) string {
+	// AS 1 rID 2
+	// Example: 2001:1:100::2/128
 	parts := strings.Split(prefix, "/")
 	base := strings.TrimSuffix(parts[0], "::")
 	id := routerName[1:]
