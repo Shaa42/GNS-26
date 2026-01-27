@@ -2,7 +2,6 @@ package applycfg
 
 import (
 	"io"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -24,7 +23,6 @@ func ApplyCfg(routerID, gnsProjectName string) {
 		"project-files",
 		"dynamips",
 	)
-	fmt.Println(root)
 
 	pattern := filepath.Join(root, "*", "configs", filename)
 
@@ -51,10 +49,6 @@ func ApplyCfg(routerID, gnsProjectName string) {
 }
 
 func rewriteFile(pathToFile string, cfgFilepath string) {
-	wd, _ := os.Getwd()
-	fmt.Println("WD =", wd)
-	fmt.Println("Trying to open:", cfgFilepath)
-
 	cfgf, err := os.Open(cfgFilepath)
 	if err != nil {
 		panic("rewriteFile(): error when opening cfg file")
