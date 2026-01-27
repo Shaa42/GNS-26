@@ -32,7 +32,7 @@ func ApplyCfg(routerID, gnsProjectName string) {
 	}
 
 	if len(matches) == 0 {
-		panic("R4.cfg not found")
+		panic(filename + " not found in GNS3 project")
 	}
 
 	wd, _ := os.Getwd()
@@ -42,7 +42,7 @@ func ApplyCfg(routerID, gnsProjectName string) {
 		wd,
 		cfgFilename,
 	)
-	
+
 	for _, pathToFile := range matches {
 		rewriteFile(pathToFile, cfgFilepath)
 	}

@@ -14,6 +14,7 @@ type InfoAS struct {
 	RemoteAS      map[string]string `json:"remote_as"`
 	Routers       []InfoRouter      `json:"routers"`
 	Links         []InfoLink        `json:"links"`
+	Providers     []string          `json:"providers"`
 }
 
 type InfoRouter struct {

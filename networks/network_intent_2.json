@@ -4,6 +4,7 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:100::/64",
+		"providers": [],
         "remote_as": {
             "AS200": "peer",
             "AS300": "peer"
@@ -312,6 +313,7 @@
         "protocol": "RIPng",
         "address_family": "ipv6",
         "network_subnet": "2001:200::/64",
+		"providers": ["AS100"],
         "remote_as": {
             "AS100": "peer"
         },
@@ -382,7 +384,16 @@
                         "cost": -1,
                         "subnet": "-",
                         "host_id": "-"
-                    }
+                    },
+					"GigabitEthernet4/0": {
+						"role": "ebgp",
+						"cost": 0,
+						"subnet": "-",
+						"host_id": "-",
+						"local_ipv6": "2001:200:400::1/64",
+						"peer_ipv6": "2001:200:400::2",
+						"peer_as": "AS400"
+					}
                 }
             },
             {
@@ -521,7 +532,15 @@
                 "endpoints": { "R8": "GigabitEthernet4/0" },
                 "role": "eBGP",
                 "info": { "as": "AS100", "ipv6": "2001:100:200::1" }
-            }
+            },
+			{
+				"endpoints": { "R9": "GigabitEthernet4/0" },
+				"role": "eBGP",
+				"info": {
+					"as": "AS400",
+					"ipv6": "2001:200:400::2"
+				}
+			}
         ]
     },
     "AS300": {
@@ -529,6 +548,7 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:300::/64",
+		"providers": ["AS100"],
         "remote_as": {
             "AS100": "peer",
             "AS400": "peer"
@@ -799,6 +819,7 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:400::/64",
+		"providers": ["AS200", "AS300"],
         "remote_as": {
             "AS300": "peer",
             "AS500": "peer"
@@ -870,7 +891,16 @@
                         "cost": -1,
                         "subnet": "-",
                         "host_id": "-"
-                    }
+                    },
+					"GigabitEthernet4/0": {
+						"role": "ebgp",
+						"cost": 0,
+						"subnet": "-",
+						"host_id": "-",
+						"local_ipv6": "2001:200:400::2/64",
+						"peer_ipv6": "2001:200:400::1",
+						"peer_as": "AS200"
+					}
                 }
             },
             {
@@ -1023,7 +1053,15 @@
                 "endpoints": { "R22": "GigabitEthernet4/0" },
                 "role": "eBGP",
                 "info": { "as": "AS500", "ipv6": "2001:400:500::2" }
-            }
+            },
+			{
+				"endpoints": { "R20": "GigabitEthernet4/0" },
+				"role": "eBGP",
+				"info": {
+					"as": "AS200",
+					"ipv6": "2001:200:400::1"
+				}
+			}
         ]
     },
     "AS500": {
@@ -1031,6 +1069,7 @@
         "protocol": "RIPng",
         "address_family": "ipv6",
         "network_subnet": "2001:500::/64",
+		"providers": ["AS400"],
         "remote_as": {
             "AS400": "peer"
         },

@@ -2,6 +2,7 @@ package writeconf
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -44,4 +45,18 @@ func ConfRIP() string {
 
 func ConfNoSD() string {
 	return "no shutdown\n"
+}
+
+func contains(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func asNumber(asName string) int {
+	n, _ := strconv.Atoi(asName[2:])
+	return n
 }

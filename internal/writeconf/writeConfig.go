@@ -11,9 +11,11 @@ import (
 func WriteConfig(data parseintent.InfoAS) {
 	eBGP_activated := false // If eBGP is activated, thus activating iBGP
 	is_eBGP_router := false
-	
+
 	var ibgpNeighbors []string
 	var ebgpNeighbors [][2]string
+	asProviders := data.Providers
+
 	if len(data.RemoteAS) > 0 {
 		// More than one AS in the network
 		eBGP_activated = true
@@ -31,26 +33,27 @@ func WriteConfig(data parseintent.InfoAS) {
 				interfaceStr += " "
 				interfaceStr += interfaceName
 				interfaceIP := ""
-				
+
 				if interfaceInfo.Role == "loopback" {
-					// If the interface is a loopback and eBGP is activated, 
+					// If the interface is a loopback and eBGP is activated,
 					// set up the loopback and add it to the internal_neighbor slice
 					if eBGP_activated {
 						interfaceIP = generateLoopbackIPv6(data.NetworkSubnet, router.Name)
-						
+
 						ibgpNeighbors = append(ibgpNeighbors, interfaceIP)
 					}
-					
+
 				}
 			}
 		}
 	}
 
-	
-
 	// Setup the .cfg file for every router
 	for _, router := range data.Routers {
 		is_eBGP_router = false
+		ebgpNeighbors = nil
+		policyStr := ""
+
 		// R1 => rN = "1"
 		rN := router.Name[1:]
 		FILENAME := router.Name + "_configs_i" + rN + "_startup-config" + ".cfg"
@@ -72,7 +75,7 @@ func WriteConfig(data parseintent.InfoAS) {
 		default:
 			panic("unrecognized internal routing protocol (atm only RIP and OSPF can be used)")
 		}
-		
+
 		file, err := os.Create(FILENAME)
 		if err != nil {
 			log.Fatal(err)
@@ -118,10 +121,10 @@ func WriteConfig(data parseintent.InfoAS) {
 				var eBGP_peer [2]string // [REMOTE_AS_NUM, REMOTE_AS_IP]
 				eBGP_peer[0] = interfaceInfo.PeerAS
 				eBGP_peer[1] = interfaceInfo.PeerIPv6
-				
+
 				// Adds the remote-AS router as neighbor
 				ebgpNeighbors = append(ebgpNeighbors, eBGP_peer)
-				
+
 			}
 
 			interfacesStr.WriteString(ConfIPv6(interfaceIP, interfaceName))
@@ -159,25 +162,65 @@ func WriteConfig(data parseintent.InfoAS) {
 
 			idx := strings.LastIndex(loopbackIP, ":")
 			loopbackSubnet := loopbackIP[:idx+1]
-			
+
+			//set a name for each policy
+			prefixListName := "PL-EXPORT-" + router.Name
+			routerMapName := "RM-EXPORT-" + router.Name
+
+			preferredProvider := ""
+			isMultiHomed := len(asProviders) > 1
+			if isMultiHomed {
+				preferredProvider = asProviders[0]
+				for _, p := range asProviders[1:] {
+					if asNumber(p) < asNumber(preferredProvider) {
+						preferredProvider = p
+					}
+				}
+			}
+
+			//add ipv6 prefix-list and route-map to policyStr
+			policyStr += "ipv6 prefix-list " + prefixListName + " seq 10 permit " + loopbackSubnet + "/48\n"
+			policyStr += "route-map " + routerMapName + " permit 10\n"
+			policyStr += " match ipv6 address prefix-list " + prefixListName + "\n!\n"
+			if preferredProvider != "" {
+				policyStr += "route-map RM-IN-LOCAL-PREF " + router.Name + " permit 10\n"
+				policyStr += " set local-preference 200\n!\n"
+			}
+
 			// Advertise the loopback subnet
 			bgpNeighborActivate += "  network " + loopbackSubnet + "/48"
 			bgpNeighborActivate += "\n"
 
 			// Sets up a static route in order to allow the loopback subnet advertisement
-			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0"
+			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0\n"
+
 			for _, remotePeer := range ebgpNeighbors {
-				
-				remotePeerAS := remotePeer[0][2:] // remotePeer[0] is like AS111
+
+				remotePeerASName := remotePeer[0]
+				remotePeerAS := remotePeerASName[2:] // remotePeer[0] is like AS111
 				remotePeerIP := remotePeer[1]
+
+				isProvider := contains(asProviders, remotePeerASName)
+				isCustomer := !isProvider
+				if isCustomer {
+					bgpConfStr += "  neighbor " + remotePeerIP + " default-originate\n"
+				}
+
+				if remotePeerASName == preferredProvider {
+					bgpConfStr += " neighbor " + remotePeerIP + " route-map RM-IN-LOCAL-PREF " + router.Name + " in\n"
+				}
+
 				bgpConfStr += " neighbor " + remotePeerIP + " remote-as " + remotePeerAS
+				bgpConfStr += " \n"
+
+				//apply route-map OUT to eBGP neighbor
+				bgpConfStr += " neighbor " + remotePeerIP + " route-map " + routerMapName + " out"
 				bgpConfStr += " \n"
 
 				bgpNeighborActivate += "  neighbor " + remotePeerIP + " activate"
 				bgpNeighborActivate += "  \n"
 			}
 		}
-		
 
 		for _, neighborIP := range ibgpNeighbors {
 			// for each neighbor, neighbor activate + update-source Loopback0
@@ -185,15 +228,14 @@ func WriteConfig(data parseintent.InfoAS) {
 				continue
 			}
 
-
 			neighborAddr := strings.Split(neighborIP, "/")[0]
-			
+
 			// Sets up the neighbours and use their Loopback as source
 			bgpConfStr += " neighbor " + neighborAddr + " remote-as " + localAS
 			bgpConfStr += " \n"
 			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
 			bgpConfStr += " \n"
-			
+
 			bgpNeighborActivate += "  neighbor " + neighborAddr + " activate"
 			bgpNeighborActivate += "  \n"
 		}
@@ -209,13 +251,12 @@ func WriteConfig(data parseintent.InfoAS) {
 		bgpConfStr += bgpNeighborActivate
 		bgpConfStr += "\n exit-address-family"
 
-		
-
-		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s\n%s",
+		content := fmt.Sprintf("%s %s\n%s \n%s\n%s\n%s\n%s\n%s\n%s\n%s",
 			header,
 			router.Name,
 			subHeader,
 			interfacesStr.String(),
+			policyStr,
 			bgpConfStr,
 			bgpSelfStaticRoute,
 			ospfConfStr,
