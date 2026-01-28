@@ -54,6 +54,18 @@ func WriteConfig(data parseintent.InfoAS) {
 		ebgpNeighbors = nil
 		policyStr := ""
 
+		// Select the preferred provider
+		preferredProvider := ""
+		isMultiHomed := len(asProviders) > 1
+		if isMultiHomed {
+			preferredProvider = asProviders[0]
+			for _, p := range asProviders[1:] {
+				if asNumber(p) < asNumber(preferredProvider) {
+					preferredProvider = p
+				}
+			}
+		}
+
 		// R1 => rN = "1"
 		rN := router.Name[1:]
 		FILENAME := router.Name + "_configs_i" + rN + "_startup-config" + ".cfg"
@@ -167,17 +179,6 @@ func WriteConfig(data parseintent.InfoAS) {
 			exportToCustomer := "RM-EXPORT-CUST-" + router.Name
 			exportToProvider := "RM-EXPORT-PROV-" + router.Name
 
-			preferredProvider := ""
-			isMultiHomed := len(asProviders) > 1
-			if isMultiHomed {
-				preferredProvider = asProviders[0]
-				for _, p := range asProviders[1:] {
-					if asNumber(p) < asNumber(preferredProvider) {
-						preferredProvider = p
-					}
-				}
-			}
-
 			//add ipv6 prefix-list and route-map to policyStr
 			if preferredProvider != "" {
 				policyStr += "route-map RM-IN-LOCAL-PREF " + router.Name + " permit 10\n"
@@ -245,6 +246,10 @@ func WriteConfig(data parseintent.InfoAS) {
 			bgpConfStr += " \n"
 			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
 			bgpConfStr += " \n"
+
+			if is_eBGP_router && preferredProvider != "" && len(ebgpNeighbors) > 0 {
+				bgpConfStr += " neighbor " + neighborAddr + " route-map RM-IN-LOCAL-PREF " + router.Name + " in\n"
+			}
 
 			bgpNeighborActivate += "  neighbor " + neighborAddr + " activate"
 			bgpNeighborActivate += "  \n"
