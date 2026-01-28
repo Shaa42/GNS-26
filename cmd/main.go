@@ -1,7 +1,6 @@
 package main
 
 import (
-	"gns-26/internal/applycfg"
 	"gns-26/internal/parseintent"
 	"gns-26/internal/writeconf"
 )
@@ -19,11 +18,4 @@ func main() {
 		writeconf.WriteConfig(asVal)
 	}
 
-	for _, asVal := range asMap {
-		// asVal.LogAS()
-		for _, router := range asVal.Routers {
-			// Apply the created .cfg to every router
-			applycfg.ApplyCfg(router.Name[1:], "big-nw")
-		}
-	}
 }

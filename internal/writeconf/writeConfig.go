@@ -14,7 +14,6 @@ func WriteConfig(data parseintent.InfoAS) {
 
 	var ibgpNeighbors []string
 	var ebgpNeighbors [][2]string
-	asProviders := data.Providers
 
 	if len(data.RemoteAS) > 0 {
 		// More than one AS in the network
@@ -53,18 +52,6 @@ func WriteConfig(data parseintent.InfoAS) {
 		is_eBGP_router = false
 		ebgpNeighbors = nil
 		policyStr := ""
-
-		// Select the preferred provider
-		preferredProvider := ""
-		isMultiHomed := len(asProviders) > 1
-		if isMultiHomed {
-			preferredProvider = asProviders[0]
-			for _, p := range asProviders[1:] {
-				if asNumber(p) < asNumber(preferredProvider) {
-					preferredProvider = p
-				}
-			}
-		}
 
 		// R1 => rN = "1"
 		rN := router.Name[1:]
@@ -175,16 +162,8 @@ func WriteConfig(data parseintent.InfoAS) {
 			idx := strings.LastIndex(loopbackIP, ":")
 			loopbackSubnet := loopbackIP[:idx+1]
 
-			//set a name for each policy
-			exportToCustomer := "RM-EXPORT-CUST-" + router.Name
-			exportToProvider := "RM-EXPORT-PROV-" + router.Name
-
-			//add ipv6 prefix-list and route-map to policyStr
-			if preferredProvider != "" {
-				policyStr += "route-map RM-IN-LOCAL-PREF " + router.Name + " permit 10\n"
-				policyStr += " set local-preference 200\n!\n"
-			}
-
+			policyStr += "route-map RM-IN-FROM-CLIENT permit 10\n"
+			policyStr += " set local-preference 200\n!\n"
 			// Advertise the loopback subnet
 			bgpNeighborActivate += "  network " + loopbackSubnet + "/48"
 			bgpNeighborActivate += "\n"
@@ -192,37 +171,15 @@ func WriteConfig(data parseintent.InfoAS) {
 			// Set up a static route in order to allow the loopback subnet advertisement
 			bgpSelfStaticRoute = "ipv6 route " + loopbackSubnet + "/48" + " Null0\n"
 
-			// Set a default route-map for providers
-			policyStr += "route-map " + exportToProvider + " permit 10\n!\n"
-
-			// Set a route-map which declares only internal network to clients
-			policyStr += "ipv6 prefix-list PL-SELF-" + router.Name + " seq 10 permit " + loopbackSubnet + "/48\n"
-			policyStr += "route-map " + exportToCustomer + " permit 10\n"
-			policyStr += " match ipv6 address prefix-list PL-SELF-" + router.Name + "\n!\n"
-
 			for _, remotePeer := range ebgpNeighbors {
 
 				remotePeerASName := remotePeer[0]
 				remotePeerAS := remotePeerASName[2:] // remotePeer[0] is like AS111
 				remotePeerIP := remotePeer[1]
 
-				isProvider := contains(asProviders, remotePeerASName)
-				isCustomer := !isProvider
-
-				if isCustomer {
-					//Declare default route to customers
-					bgpConfStr += "  neighbor " + remotePeerIP + " default-originate\n"
-					// Apply route-map OUT to eBGP neighbor
-					bgpConfStr += " neighbor " + remotePeerIP + " route-map " + exportToCustomer + " out"
-					bgpConfStr += " \n"
-				} else {
-					// Apply default route-map OUT to providers
-					bgpConfStr += " neighbor " + remotePeerIP + " route-map " + exportToProvider + " out"
-					bgpConfStr += " \n"
-				}
-
-				if remotePeerASName == preferredProvider {
-					bgpConfStr += " neighbor " + remotePeerIP + " route-map RM-IN-LOCAL-PREF " + router.Name + " in\n"
+				role, ok := data.RemoteAS[remotePeerASName]
+				if ok && role == "client" {
+					bgpConfStr += " neighbor " + remotePeerIP + " route-map RM-IN-FROM-CLIENT in\n"
 				}
 
 				bgpConfStr += " neighbor " + remotePeerIP + " remote-as " + remotePeerAS
@@ -246,10 +203,6 @@ func WriteConfig(data parseintent.InfoAS) {
 			bgpConfStr += " \n"
 			bgpConfStr += " neighbor " + neighborAddr + " update-source " + "Loopback0"
 			bgpConfStr += " \n"
-
-			if is_eBGP_router && preferredProvider != "" && len(ebgpNeighbors) > 0 {
-				bgpConfStr += " neighbor " + neighborAddr + " route-map RM-IN-LOCAL-PREF " + router.Name + " in\n"
-			}
 
 			bgpNeighborActivate += "  neighbor " + neighborAddr + " activate"
 			bgpNeighborActivate += "  \n"
