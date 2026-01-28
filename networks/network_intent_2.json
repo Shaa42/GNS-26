@@ -4,10 +4,9 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:100::/64",
-		"providers": [],
         "remote_as": {
-            "AS200": "peer",
-            "AS300": "peer"
+            "AS200": "client",
+            "AS300": "client"
         },
         "routers": [
             {
@@ -313,10 +312,9 @@
         "protocol": "RIPng",
         "address_family": "ipv6",
         "network_subnet": "2001:200::/64",
-		"providers": ["AS100"],
         "remote_as": {
-            "AS100": "peer",
-            "AS400": "peer"
+            "AS100": "provider",
+            "AS400": "client"
         },
         "routers": [
             {
@@ -549,10 +547,9 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:300::/64",
-		"providers": ["AS100"],
         "remote_as": {
-            "AS100": "peer",
-            "AS400": "peer"
+            "AS100": "provider",
+            "AS400": "client"
         },
         "routers": [
             {
@@ -820,11 +817,10 @@
         "protocol": "OSPF",
         "address_family": "ipv6",
         "network_subnet": "2001:400::/64",
-		"providers": ["AS200", "AS300"],
         "remote_as": {
-			"AS200": "peer",
-            "AS300": "peer",
-            "AS500": "peer"
+			"AS200": "provider",
+            "AS300": "provider",
+            "AS500": "client"
         },
         "routers": [
             {
@@ -1071,9 +1067,8 @@
         "protocol": "RIPng",
         "address_family": "ipv6",
         "network_subnet": "2001:500::/64",
-		"providers": ["AS400"],
         "remote_as": {
-            "AS400": "peer"
+            "AS400": "provider"
         },
         "routers": [
             {
