@@ -179,7 +179,7 @@ func WriteConfig(data parseintent.InfoAS) {
 
 				role, ok := data.RemoteAS[remotePeerASName]
 				if ok && role == "client" {
-					bgpConfStr += " neighbor " + remotePeerIP + " route-map RM-IN-FROM-CLIENT in\n"
+					bgpNeighborActivate += "  neighbor " + remotePeerIP + " route-map RM-IN-FROM-CLIENT in\n"
 				}
 
 				bgpConfStr += " neighbor " + remotePeerIP + " remote-as " + remotePeerAS
