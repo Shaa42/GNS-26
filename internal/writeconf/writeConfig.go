@@ -67,7 +67,7 @@ func WriteConfig(data parseintent.InfoAS) {
 			confInterfaceStr = "ipv6 rip rip_process enable"
 			ripConfStr += "\nipv6 router rip rip_process"
 		case "OSPF":
-			confInterfaceStr = "ipv6 ospf 1 area 0" // WARNING: currently CANNOT handle multiple areas
+			confInterfaceStr = "ipv6 ospf 1 area 0"
 			ospfConfStr += "\nipv6 router ospf 1"
 			ospfConfStr += "\n router-id "
 			ospfConfStr += router.RouterID
