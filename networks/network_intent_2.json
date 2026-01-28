@@ -822,6 +822,7 @@
         "network_subnet": "2001:400::/64",
 		"providers": ["AS200", "AS300"],
         "remote_as": {
+			"AS200": "peer",
             "AS300": "peer",
             "AS500": "peer"
         },
