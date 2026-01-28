@@ -315,7 +315,8 @@
         "network_subnet": "2001:200::/64",
 		"providers": ["AS100"],
         "remote_as": {
-            "AS100": "peer"
+            "AS100": "peer",
+            "AS400": "peer"
         },
         "routers": [
             {
