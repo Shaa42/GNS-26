@@ -17,6 +17,9 @@ func main() {
 	for _, asVal := range asMap {
 		// Create a .cfg file for every AS' router
 		writeconf.WriteConfig(asVal)
+	}
+
+	for _, asVal := range asMap {
 		// asVal.LogAS()
 		for _, router := range asVal.Routers {
 			// Apply the created .cfg to every router
